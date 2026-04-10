@@ -1,10 +1,8 @@
-// components/layout/navbar.tsx
 import Link from "next/link";
 import { auth0 } from "@/lib/auth0";
 
 export default async function Navbar() {
-  // Auth0 v4'te session server-side okunuyor
-  // Bu fonksiyon her request'te çalışır
+  
   const session = await auth0.getSession();
   const user = session?.user;
 
@@ -20,7 +18,6 @@ export default async function Navbar() {
         </Link>
 
         {user ? (
-          // Kullanıcı giriş yapmışsa
           <>
             <Link
               href="/profile"
@@ -36,7 +33,6 @@ export default async function Navbar() {
             </a>
           </>
         ) : (
-          // Giriş yapmamışsa
           <>
             
              <a href="/auth/login"

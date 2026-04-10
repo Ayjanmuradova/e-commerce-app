@@ -1,15 +1,14 @@
-// app/profile/page.tsx
 import { auth0 } from "@/lib/auth0";
 import { redirect } from "next/navigation";
 
 export default async function ProfilePage() {
   const session = await auth0.getSession();
 
-  if (!session) {
+  if (!session) { 
     redirect("/auth/login");
   }
 
-  const user = session.user;
+  const user = session.user; 
 
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
