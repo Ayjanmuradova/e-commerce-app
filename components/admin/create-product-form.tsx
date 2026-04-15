@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {useForm} from "react-hook-form";
 import {
+ type CreateProductInput,
   createProductSchema,
-  type ProductFormState,
 } from "@/lib/validations/product";
 import { PRODUCT_CATEGORIES } from "@/constants/products";
 import { Input } from "@/components/ui/input";
@@ -18,84 +19,56 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
+import { createProduct } from "@/lib/actions/product";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export function CreateProductForm() {
   const router = useRouter();
-  const [form, setForm] = useState<ProductFormState>({
-    title: "",
-    description: "",
-    brand: "",
-    price: "",
-    category: "",
-    stock: "",
-    imageUrl: "",
-  });
-
-  const [errors, setErrors] = useState<Partial<ProductFormState>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const{ register, 
+        handleSubmit,
+        setValue,
+        watch,
+        setError, 
+        formState: { errors }, } = useForm<CreateProductInput>({
+          resolver: zodResolver(createProductSchema),
+          defaultValues: {
+            title: "",
+            description: "",
+            brand: "",
+            category: "",
+            imageUrl: "",
+          },
+  });
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: undefined }));
-  }
-  function handleSelectChange(value: string) {
-    setForm((prev) => ({ ...prev, category: value }));
-    setErrors((prev) => ({ ...prev, category: undefined }));
-  }
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const categoryVlaue = watch("category");
+
+  const onSubmit = async (data: CreateProductInput) => {
     setServerError(null);
-
-    const parsed = {
-      title: form.title,
-      description: form.description,
-      brand: form.brand,
-      price: Number(form.price),
-      category: form.category,
-      stock: Number(form.stock),
-      imageUrl: form.imageUrl || undefined,
-    };
-    const result = createProductSchema.safeParse(parsed);
-
-    if (!result.success) {
-      const fieldErrors: Partial<ProductFormState> = {};
-      result.error.issues.forEach((err) => {
-        const field = err.path[0] as keyof ProductFormState;
-        if (field) {
-        fieldErrors[field] = err.message;}
-      });
-      setErrors(fieldErrors);
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result.data),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setServerError(data.error ?? "Something went wrong.");
-        return;
-      }
+      const response = await createProduct(data);
       router.push("/admin/products");
-    } catch {
-      setServerError("Network error. Please try again.");
-    } finally {
+    } catch (error: any) {
+      if(error.details?.fieldErrors){
+        Object.keys(error.details.fieldErrors).forEach((field) => {
+          setError(field as keyof CreateProductInput, {
+            type: "server",
+            message: error.details.fieldErrors[field][0],
+          });
+        });
+      } else{
+        setServerError(error.message || "An unexpected error occurred.");
+      }
+      }
+       finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
       {serverError && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {serverError}
@@ -103,82 +76,71 @@ export function CreateProductForm() {
       )}
 
       <Field>
-        <FieldLabel>
-          Product Title<span className="text-red-500">*</span>
+        <FieldLabel htmlFor="title">
+          Product Title*
         </FieldLabel>
         <Input
-          name="title"
-          value={form.title}
-          onChange={handleChange}
+          id="title"
+          {...register("title")}
           placeholder="e.g. Sony WH-1000XM5"
         />
-        <FieldError errors={[{ message: errors.title }]} />
+        <FieldError errors={[{ message: errors.title?.message }]} />
       </Field>
 
       <Field>
-        <FieldLabel>
-          Description<span className="text-red-500">*</span>
+        <FieldLabel htmlFor="description">
+          Description*
         </FieldLabel>
         <Textarea
-          name="description"
-          value={form.description}
-          onChange={handleChange}
+          id="description"
+          {...register("description")}
           placeholder="Describe the product..."
           rows={4}
         />
-        <FieldError errors={[{ message: errors.description }]} />
+        <FieldError errors={[{ message: errors.description?.message }]} />
       </Field>
 
       <Field>
-        <FieldLabel>
-          Brand<span className="text-red-500">*</span>
+        <FieldLabel htmlFor="brand">
+          Brand*
         </FieldLabel>
         <Input
-          name="brand"
-          type="text"
-          value={form.brand}
-          onChange={handleChange}
+          id="brand"
+          {...register("brand")}
           placeholder="e.g. Sony"
         />
-        <FieldError errors={[{ message: errors.brand }]} />
+        <FieldError errors={[{ message: errors.brand?.message }]} />
       </Field>
       <div className="grid grid-cols-2 gap-4">
         <Field>
-          <FieldLabel>
-            Price (EUR)<span className="text-red-500">*</span>
+          <FieldLabel htmlFor="price">
+            Price (EUR)*
           </FieldLabel>
           <Input
-            name="price"
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.price}
-            onChange={handleChange}
+            id="price"
+            {...register("price", { valueAsNumber: true })}
             placeholder="0.00"
           />
-          <FieldError errors={[{ message: errors.price }]} />
+          <FieldError errors={[{ message: errors.price?.message }]} />
         </Field>
         <Field>
-          <FieldLabel>
-            Stock<span className="text-red-500">*</span>
+          <FieldLabel htmlFor="stock">
+            Stock*
           </FieldLabel>
           <Input
-            name="stock"
-            type="number"
-            min="0"
-            value={form.stock}
-            onChange={handleChange}
+            id="stock"
+            {...register("stock", { valueAsNumber: true })}
             placeholder="0"
           />
-          <FieldError errors={[{ message: errors.stock }]} />
+          <FieldError errors={[{ message: errors.stock?.message }]} />
 
         </Field>
       </div>
       <Field>
         <FieldLabel>
-          Category<span className="text-red-500">*</span>
+          Category*
         </FieldLabel>
-        <Select onValueChange={handleSelectChange} value={form.category}>
+        <Select onValueChange={(value)=> setValue("category", value, { shouldValidate: true })} value={categoryVlaue}>
           <SelectTrigger
             className={errors.category ? "border-red-400 bg-red-50" : ""}
           >
@@ -192,7 +154,7 @@ export function CreateProductForm() {
             ))}
           </SelectContent>
         </Select>
-        <FieldError errors={[{ message: errors.category }]} />
+        <FieldError errors={[{ message: errors.category?.message }]} />
       </Field>
       <div className="flex gap-3 pt-2">
         <Button

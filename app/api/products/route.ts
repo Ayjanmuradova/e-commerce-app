@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
 
     return NextResponse.json(
-      { error: "Invalid request payload. Please send a valid JSON." },
-      { status: 400 }
+      { error: "Internal Server Error. Something went wrong while processing your request." },
+      { status: 500 }
     );
   }
 }

@@ -1,9 +1,7 @@
-import { requireAdmin } from "@/lib/authz"; 
-import {CreateProductForm} from "@/components/admin/create-product-form";
+ import {CreateProductForm} from "@/components/admin/create-product-form";
 
 
 export default async function CreateProductPage(){
-     await requireAdmin();
 
     return (
         <div className="max-w-2xl mx-auto py-12 px-4">

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { auth0 } from "@/lib/auth0";
+import { isAdmin, getSessionUser } from "@/lib/authz";
 
 export default async function Navbar() {
   
-  const session = await auth0.getSession();
-  const user = session?.user;
+ const user = await getSessionUser();//
+ const isUserAdmin = isAdmin(user);
 
   return (
     <header className="border-b bg-white px-6 py-4 flex items-center justify-between">
@@ -13,9 +13,15 @@ export default async function Navbar() {
       </Link>
 
       <nav className="flex items-center gap-4 text-sm">
-        <Link href="/products" className="text-gray-600 hover:text-gray-900">
-          Products
+        <Link href="/" className="text-gray-600 hover:text-gray-900">
+          Home
         </Link>
+
+        {isUserAdmin && (
+          <Link href="/admin/products/new" className="text-indigo-600 font-meduim hover:underline">
+            New Product
+          </Link>
+        )}
 
         {user ? (
           <>

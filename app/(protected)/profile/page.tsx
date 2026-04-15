@@ -1,21 +1,15 @@
-import { auth0 } from "@/lib/auth0";
-import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/authz";
 
 export default async function ProfilePage() {
-  const session = await auth0.getSession();
+  const user = await getSessionUser();
 
-  if (!session) { 
-    redirect("/auth/login");
-  }
-
-  const user = session.user; 
+  if (!user) return null;
 
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
       <h1 className="text-2xl font-bold text-gray-900 mb-8">My Profile</h1>
 
       <div className="bg-white border rounded-xl p-6 space-y-4">
-
         <div className="flex items-center gap-4 pb-4 border-b">
           {user.picture && (
             <img
@@ -35,11 +29,8 @@ export default async function ProfilePage() {
 
         <div className="pt-4 border-t">
           <p className="text-sm font-medium text-gray-500 mb-1">Address</p>
-          <p className="text-gray-400 text-sm italic">
-            No address saved yet.
-          </p>
+          <p className="text-gray-400 text-sm italic">No address saved yet.</p>
         </div>
-
       </div>
     </div>
   );

@@ -5,7 +5,11 @@ export type Product = {
   description: string;
   imageUrl: string[];
   price: number;
-  discountedPrice?: number;
+  discount?: {
+    amount: number;
+    type: "percentage" | "fixed";
+  };
+
   currency?: string;
   stock: number;
   tags?: string[];
