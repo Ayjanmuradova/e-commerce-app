@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { createProductAction } from "@/app/admin/products/new/action";
 
+interface ApiError extends Error{
+  message: string;
+  details?:{
+  fieldErrors?: Record<string, string[]>;
+};
+}
+
 export function CreateProductForm() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -36,8 +43,9 @@ export function CreateProductForm() {
         router.push("/admin/products");
       }
 
-    } catch (error: any) {
-      setServerError("An unexpected error occurred.");
+    } catch (err: unknown) {
+      const error = err as ApiError;
+      setServerError(error.message || "An unexpected error occurred.");
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +81,25 @@ export function CreateProductForm() {
         />
         {fieldErrors.price && <FieldError errors={[{ message: fieldErrors.price }]} />}
       </Field>
+
+      <div className="grid grid-cols-2 gap-4 p-4 border border-gray-100 bg-gray-50 rounded-lg">
+        <Field>
+          <FieldLabel htmlFor="discountAmount">Discount Amount (Optional)</FieldLabel>
+          <Input id="discountAmount" name="discountAmount" type="number" step="0.01" placeholder="0.00" />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="discountType">Discount Type</FieldLabel>
+          <select 
+            id="discountType" 
+            name="discountType" 
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+          >
+            <option value="">No Discount</option>
+            <option value="percentage">Percentage (%)</option>
+            <option value="fixed">Fixed Amount</option>
+          </select>
+        </Field>
+      </div>
 
       <Field>
         <FieldLabel htmlFor="imageUrl">Product Images*</FieldLabel>
