@@ -10,7 +10,7 @@ export default function AdminSideBar() {
                 <Link href="/admin" className="px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-slate-800">
                     Dashboard
                 </Link>
-                <Link href="/admin/users" className="px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-slate-800">
+                <Link href="/admin/products" className="px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-slate-800">
                     All Products
                 </Link>
                 <Link href="/admin/products/new" className="px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-slate-800">
