@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { isAdmin, getSessionUser } from "@/lib/authz";
+import CartButton from '@/components/CartButton';
 
 export default async function Navbar() {
   
@@ -31,7 +32,7 @@ export default async function Navbar() {
             >
               {user.name ?? user.email}
             </Link>
-            
+            <CartButton />
              <Link href="/auth/logout"
               className="bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600"
             >

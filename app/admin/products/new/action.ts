@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { CreateProductFormState } from '@/app/admin/products/new/form-state';
 import { getAdmin } from '@/lib/authz';
 import { createProduct } from '@/services/products/data';
+import { stripe } from '@/lib/stripe';
 
 const createProductSchema = z.object({
   title: z
@@ -82,9 +83,24 @@ export async function createProductAction(
       }),
     );
 
+    const stripeProduct = await stripe.products.create({
+      name: parsed.data.title,
+      images: uploaded.length > 0 ? [uploaded[0].url] : [],
+    });
+
+    const stripePrice = await stripe.prices.create({
+      product: stripeProduct.id,
+      unit_amount: Math.round(parsed.data.price * 100),
+      currency: 'sek',
+    });
+
     await createProduct({
         title: parsed.data.title, 
-        price: parsed.data.price,  imageUrl: uploaded.map((item) =>({ url: item.url }))});
+        price: parsed.data.price,  
+        imageUrl: uploaded.map((item) =>({ url: item.url })),
+        stripeProductId: stripeProduct.id,
+        stripePriceId: stripePrice.id,
+      });
 
     return {
       status: 'success',

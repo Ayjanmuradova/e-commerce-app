@@ -11,6 +11,8 @@ interface ProductPayload {
   title: string;
   price: number;
   imageUrl: { url: string }[];
+  stripeProductId?: string;
+  stripePriceId?: string;
 }
 
 export async function createProduct(product: ProductPayload) {
@@ -20,6 +22,8 @@ export async function createProduct(product: ProductPayload) {
       price: product.price,
       currency: Currency.SEK,
       imageUrl: product.imageUrl.map((item) => item.url),
+      stripeProductId: product.stripeProductId,
+      stripePriceId: product.stripePriceId,
     },
   });
 }
@@ -50,7 +54,13 @@ export async function getProductById(id: string) {
 
 export async function updateProduct(
   id: string,
-  data: { title?: string; price?: number; imageUrl?: string[] },
+  data: {
+    title?: string;
+    price?: number;
+    imageUrl?: string[];
+    stripeProductId?: string;
+    stripePriceId?: string;
+  },
 ) {
   return await prisma.product.update({
     where: {
