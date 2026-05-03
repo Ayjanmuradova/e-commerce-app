@@ -1,9 +1,8 @@
 import { getSessionUser } from "@/lib/authz";
+import Image from "next/image";
 
 export default async function ProfilePage() {
   const user = await getSessionUser();
-
-  if (!user) return null;
 
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
@@ -11,21 +10,23 @@ export default async function ProfilePage() {
 
       <div className="bg-white border rounded-xl p-6 space-y-4">
         <div className="flex items-center gap-4 pb-4 border-b">
-          {user.picture && (
-            <img
+          {user?.picture && (
+            <Image
               src={user.picture}
               alt="Profile"
+              width={64}
+              height={64}
               className="w-16 h-16 rounded-full"
             />
           )}
           <div>
-            <p className="font-semibold text-lg">{user.name}</p>
-            <p className="text-gray-500 text-sm">{user.email}</p>
+            <p className="font-semibold text-lg">{user?.name}</p>
+            <p className="text-gray-500 text-sm">{user?.email}</p>
           </div>
         </div>
 
-        <InfoRow label="Email" value={user.email ?? "—"} />
-        <InfoRow label="Name" value={user.name ?? "—"} />
+        <InfoRow label="Email" value={user?.email ?? "—"} />
+        <InfoRow label="Name" value={user?.name ?? "—"} />
 
         <div className="pt-4 border-t">
           <p className="text-sm font-medium text-gray-500 mb-1">Address</p>

@@ -32,26 +32,26 @@ export default async function Navbar() {
               {user.name ?? user.email}
             </Link>
             
-             <a href="/auth/logout"
+             <Link href="/auth/logout"
               className="bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600"
             >
               Logout
-            </a>
+            </Link>
           </>
         ) : (
           <>
             
-             <a href="/auth/login"
+             <Link href="/auth/login"
               className="text-indigo-600 font-medium hover:text-indigo-700"
             >
               Login
-            </a>
+            </Link>
             
-             <a href="/auth/login?screen_hint=signup"
+             <Link href="/auth/login?screen_hint=signup"
               className="bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700"
             >
               Sign Up
-            </a>
+            </Link>
           </>
         )}
       </nav>
