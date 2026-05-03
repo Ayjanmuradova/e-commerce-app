@@ -4,7 +4,10 @@ export type CreateProductFormState = {
   fieldErrors: {
     title?: string;
     price?: string;
-    imageUrl?: string;
+    images?: string;
+    description?: string;
+    brand?: string;
+    stock?: string;
   };
 };
 

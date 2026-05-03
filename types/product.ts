@@ -3,7 +3,7 @@ export type Product = {
   title: string;
   brand: string;
   description: string;
-  imageUrl: string[];
+  images: string[];
   price: number;
   discount?: {
     amount: number;
@@ -13,7 +13,6 @@ export type Product = {
   currency?: string;
   stock: number;
   tags?: string[];
-  userId?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };

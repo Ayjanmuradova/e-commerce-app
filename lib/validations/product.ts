@@ -23,7 +23,8 @@ export const createProductSchema = z.object({
     discount: discountSchema.optional(),
     category: z.string().min(1, "Please select a category"),
     stock: z.number({ message: "Stock must be a number." }).int("Stock must be a whole number.").min(0, "Stock cannot be negative."),
-    imageUrl: z.string().url("Image URL must be a valid URL"),
+    tags: z.array(z.string()).default([]),
+    images: z.array(z.string().url("Image URL must be a valid URL")),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;

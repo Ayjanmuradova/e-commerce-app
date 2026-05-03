@@ -1,33 +1,12 @@
 'use server';
 
 import { put as putToBlob } from '@vercel/blob';
-import { z } from 'zod';
-import type { CreateProductFormState } from '@/app/admin/products/new/form-state';
+import type { CreateProductFormState } from '@/types/form-state';
 import { getAdmin } from '@/lib/authz';
 import { createProduct } from '@/services/products/data';
 import { stripe } from '@/lib/stripe';
-
-const createProductSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(1, 'Product title is required.')
-    .max(120, 'Product title must be 120 characters or less.'),
-  price: z.coerce
-    .number({ error: 'Price is required.' })
-    .positive('Price must be greater than 0.'),
-  imageUrl: z
-    .array(z.instanceof(File))
-    .min(1, 'Upload at least one image.')
-    .refine(
-      (files) => files.every((file) => file.size > 0),
-      'One or more selected files are empty.',
-    )
-    .refine(
-      (files) => files.every((file) => file.type.startsWith('image/')),
-      'All uploaded files must be images.',
-    ),
-});
+import { redirect } from 'next/navigation';
+import { createProductSchema } from '@/lib/validations/product';
 
 function getFileName(file: File, index: number): string {
   const fileExtension = file.name.includes('.')
@@ -51,12 +30,20 @@ export async function createProductAction(
     });
 
   const files = formData
-    .getAll('imageUrl')
+    .getAll('images')
     .filter((entry): entry is File => entry instanceof File);
   const parsed = createProductSchema.safeParse({
     title: formData.get('title'),
+    description: formData.get('description'),
+    brand: formData.get('brand'),
     price: formData.get('price'),
-    imageUrl: files,
+    stock: formData.get('stock'),
+    tags: formData.getAll('tags'),
+    discount: {
+      amount: formData.get('discountAmount'),
+      type: formData.get('discountType')
+    },
+    images: files,
   });
 
   if (!parsed.success) {
@@ -67,14 +54,15 @@ export async function createProductAction(
       fieldErrors: {
         title: errors.title?.[0],
         price: errors.price?.[0],
-        imageUrl: errors.imageUrl?.[0],
+        images: errors.images?.[0],
       },
     };
   }
 
   try {
+    const files = formData.getAll('images') as File[];
     const uploaded = await Promise.all(
-      parsed.data.imageUrl.map((file, index) => {
+      files.map((file, index) => {
         const filename = getFileName(file, index);
        return putToBlob(filename, file, {
           access: 'public',
@@ -96,17 +84,19 @@ export async function createProductAction(
 
     await createProduct({
         title: parsed.data.title, 
-        price: parsed.data.price,  
-        imageUrl: uploaded.map((item) =>({ url: item.url })),
+        price: parsed.data.price, 
+        description: parsed.data.description, 
+        brand: parsed.data.brand,
+        stock: parsed.data.stock,
+        tags: parsed.data.tags || [],
+        images: uploaded.map((item) =>item.url),
         stripeProductId: stripeProduct.id,
         stripePriceId: stripePrice.id,
+        discountAmount: parsed.data.discount?.amount || null,
+        discountType: parsed.data.discount?.type || null,
       });
 
-    return {
-      status: 'success',
-      message: 'Product created successfully.',
-      fieldErrors: {},
-    };
+    redirect('/admin/products');
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error';

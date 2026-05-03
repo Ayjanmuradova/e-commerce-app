@@ -47,7 +47,7 @@ export default function CartPage() {
             {cartItems.map((item) => (
               <li key={item.id} className="py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <img src={item.imageUrl} alt={item.title} className="w-20 h-20 object-cover rounded-md border" />
+                  <img src={item.images} alt={item.title} className="w-20 h-20 object-cover rounded-md border" />
                   <div>
                     <h3 className="font-semibold text-gray-900">{item.title}</h3>
                     <p className="text-indigo-600 font-medium">{item.price} {item.currency}</p>

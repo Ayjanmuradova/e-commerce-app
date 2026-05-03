@@ -8,7 +8,7 @@ interface ProductProps {
     title: string;
     price: number;
     currency: string;
-    imageUrl: string[];
+    images: string[];
     stripePriceId?: string | null;
   };
 }
@@ -27,7 +27,7 @@ export default function ProductCard({ product }: ProductProps) {
       title: product.title,
       price: product.price,
       currency: product.currency,
-      imageUrl: product.imageUrl[0] || "", 
+      images: product.images[0] || "", 
       stripePriceId: product.stripePriceId,
     });
     
@@ -37,9 +37,9 @@ export default function ProductCard({ product }: ProductProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col">
       <div className="relative h-64 w-full bg-gray-50 border-b border-gray-100">
-        {product.imageUrl && product.imageUrl.length > 0 ? (
+        {product.images && product.images.length > 0 ? (
           <img 
-            src={product.imageUrl[0]} 
+            src={product.images[0]} 
             alt={product.title} 
             className="w-full h-full object-cover"
           />
