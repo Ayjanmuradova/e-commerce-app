@@ -90,6 +90,7 @@ if (existingProduct?.stripeProductId) {
         await updateProduct(id, {
             title,
             price,
+            stripePriceId: newStripePriceId,
             ...(newImages && { images: newImages })
         });
         revalidatePath('/admin/products');
