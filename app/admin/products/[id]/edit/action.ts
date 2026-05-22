@@ -48,7 +48,7 @@ export async function updateProductAction(id: string, prevState: ProductFormStat
 
         const { title, price } = validatedData.data;
         const files = formData.getAll('images') as File[];
-
+const existingProduct = await getProductById(id);
         let newImages: string[]| undefined = undefined;
         if (files.length > 0 && files[0].size > 0) {
             const uploaded = await Promise.all(files.map((file, index) => {
