@@ -63,7 +63,30 @@ const existingProduct = await getProductById(id);
                 await del(existingProduct.images);
             }
         }
+if (existingProduct?.stripeProductId) {
+      await stripe.products.update(existingProduct.stripeProductId, {
+        name: title,
+        ...(newImageUrls?.[0] && {
+          images: [newImageUrls[0]],
+        }),
+      });
+    }
 
+    // As mentioned on the previous comment since Stripe prices are immutable we create a new Stripe price if product price changed
+    let newStripePriceId = existingProduct?.stripePriceId;
+
+    if (
+      existingProduct?.stripeProductId &&
+      existingProduct.price !== price
+    ) {
+      const newStripePrice = await stripe.prices.create({
+        product: existingProduct.stripeProductId,
+        unit_amount: Math.round(price * 100),
+        currency: 'sek',
+      });
+
+      newStripePriceId = newStripePrice.id;
+    }
         await updateProduct(id, {
             title,
             price,
