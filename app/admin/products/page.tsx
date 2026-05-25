@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getProducts } from "@/services/products/data";
 import { formatMoney } from "@/lib/utils";
-import { deleteProductAction } from "@/app/admin/products/action";
+import DeleteProductButton from "@/components/DeleteProductButton";
 
 export default async function AdminProductsPage() {
   const productRows = await getProducts();
@@ -56,10 +56,10 @@ export default async function AdminProductsPage() {
                   </td>
                   <td className="px-4 py-3 font-medium">{row.title}</td>
                   <td className="px-4 py-3 text-slate-600">
-                    {formatMoney(row.price, row.currency)}
+                    {formatMoney(row.price, "sek")}
                   </td>
                   <td className="px-4 py-3 text-slate-600">
-                    {row.imageUrl?.length || 0}
+                    {row.images?.length || 0}
                   </td>
 
                   <td className="px-4 py-3 text-right space-x-4">
@@ -69,17 +69,7 @@ export default async function AdminProductsPage() {
                     >
                       Edit
                     </Link>
-                    <form
-                      action={deleteProductAction.bind(null, row.id)}
-                      className="inline"
-                    >
-                      <button
-                        type="submit"
-                        className="text-red-600 hover:text-red-800 font-medium transition-colors cursor-pointer"
-                      >
-                        Delete
-                      </button>
-                    </form>
+                    <DeleteProductButton id={row.id} />
                   </td>
                 </tr>
               ))

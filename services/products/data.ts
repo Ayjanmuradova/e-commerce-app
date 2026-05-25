@@ -1,16 +1,20 @@
 import { prisma } from "@/lib/prisma";
-
-export enum Currency {
-  USD = "USD",
-  SEK = "SEK",
-}
+import { Currency } from "@/types/product";
 
 export const Currencies = Object.values(Currency);
 
 interface ProductPayload {
   title: string;
   price: number;
-  imageUrl: { url: string }[];
+  description: string;
+  brand: string;
+  stock: number;
+  tags?: string[];
+  images: string[];
+  stripeProductId?: string;
+  stripePriceId?: string;
+  discountAmount?: number | null;
+  discountType?: string | null;
 }
 
 export async function createProduct(product: ProductPayload) {
@@ -19,7 +23,15 @@ export async function createProduct(product: ProductPayload) {
       title: product.title,
       price: product.price,
       currency: Currency.SEK,
-      imageUrl: product.imageUrl.map((item) => item.url),
+      images: product.images,
+      stripeProductId: product.stripeProductId,
+      stripePriceId: product.stripePriceId,
+      description: product.description,
+      brand: product.brand,
+      stock: product.stock,
+      tags: product.tags,
+      discountAmount: product.discountAmount ?? null,
+      discountType: product.discountType ?? null,
     },
   });
 }
@@ -50,7 +62,19 @@ export async function getProductById(id: string) {
 
 export async function updateProduct(
   id: string,
-  data: { title?: string; price?: number; imageUrl?: string[] },
+  data: {
+    title?: string;
+    price?: number;
+    description?: string;
+    brand?: string;
+    stock?: number;
+    tags?: string[];
+    images?: string[];
+    stripeProductId?: string;
+    stripePriceId?: string;
+    discountAmount?: number | null;
+    discountType?: string | null;
+  },
 ) {
   return await prisma.product.update({
     where: {
