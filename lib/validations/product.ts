@@ -19,10 +19,10 @@ export const createProductSchema = z.object({
     title: z.string().trim().min(1, "Title is required").max(100, "Title must be less than 100 characters."),
     description: z.string().trim().min(1, "Description is required").max(2000, "Description must be less than 2000 characters."),
     brand: z.string().trim().min(1, "Brand is required"),
-    price: z.number().positive("Price must be a positive number"),
+    price: z.coerce.number().positive("Price must be a positive number"),
     discount: discountSchema.optional(),
     category: z.string().min(1, "Please select a category"),
-    stock: z.number({ message: "Stock must be a number." }).int("Stock must be a whole number.").min(0, "Stock cannot be negative."),
+    stock: z.coerce.number().int("Stock must be a whole number.").min(0, "Stock cannot be negative."),
     tags: z.array(z.string()).default([]),
     images: z.array(z.string().url("Image URL must be a valid URL")),
 });

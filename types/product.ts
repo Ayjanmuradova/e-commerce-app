@@ -15,4 +15,12 @@ export type Product = {
   tags?: string[];
   createdAt?: Date;
   updatedAt?: Date;
+  stripeProductId?: string;
+  stripePriceId?: string;
 };
+
+export enum Currency {
+  SEK = "sek",
+  USD = "usd",
+  EUR = "eur"
+}

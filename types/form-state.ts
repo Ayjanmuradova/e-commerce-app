@@ -8,6 +8,7 @@ export type CreateProductFormState = {
     description?: string;
     brand?: string;
     stock?: string;
+    category?: string;
   };
 };
 

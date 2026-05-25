@@ -7,6 +7,7 @@ import { createProduct } from '@/services/products/data';
 import { stripe } from '@/lib/stripe';
 import { redirect } from 'next/navigation';
 import { createProductSchema } from '@/lib/validations/product';
+import { ca } from 'zod/locales';
 
 function getFileName(file: File, index: number): string {
   const fileExtension = file.name.includes('.')
@@ -36,6 +37,7 @@ export async function createProductAction(
     title: formData.get('title'),
     description: formData.get('description'),
     brand: formData.get('brand'),
+    category: formData.get('category'),
     price: formData.get('price'),
     stock: formData.get('stock'),
     tags: formData.getAll('tags'),
@@ -54,6 +56,10 @@ export async function createProductAction(
       fieldErrors: {
         title: errors.title?.[0],
         price: errors.price?.[0],
+        description: errors.description?.[0],
+        brand: errors.brand?.[0],
+        category: errors.category?.[0],
+        stock: errors.stock?.[0],
         images: errors.images?.[0],
       },
     };
@@ -96,7 +102,7 @@ export async function createProductAction(
         discountType: parsed.data.discount?.type || null,
       });
 
-    redirect('/admin/products');
+    
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error';
@@ -107,4 +113,5 @@ export async function createProductAction(
       fieldErrors: {},
     };
   }
+  redirect('/admin/products');
 }

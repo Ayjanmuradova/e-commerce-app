@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { updateProductAction } from "@/app/admin/products/[id]/edit/action";
-import { CreateProductFormState, initialCreateProductFormState } from "@/types/form-state";
+import {
+  CreateProductFormState,
+  initialCreateProductFormState,
+} from "@/types/form-state";
 
 interface EditProductFormProps {
   product: {
@@ -14,29 +17,49 @@ interface EditProductFormProps {
     title: string;
     price: number;
     images: string[];
+    description?: string;
+    brand?: string;
+    category?: string;
+    stock?: number;
   };
 }
 
 export function EditProductForm({ product }: EditProductFormProps) {
   const router = useRouter();
-  const updateActionWithId = updateProductAction.bind(null, product.id);
+  const handleUpdate = async (
+    prevState: CreateProductFormState,
+    formData: FormData,
+  ) => {
+    return updateProductAction(product.id, prevState, formData);
+  };
 
   const [state, formAction, isPending] = useActionState(
-    updateActionWithId as any,
-    initialCreateProductFormState
+    handleUpdate as any,
+    initialCreateProductFormState,
   );
 
   return (
-    <form action={formAction} className="space-y-6" encType="multipart/form-data" noValidate>
+    <form
+      action={formAction}
+      className="space-y-6"
+      encType="multipart/form-data"
+      noValidate
+    >
       {state.status === "error" && !state.fieldErrors && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {state.message}
         </div>
       )}
+      <input type="hidden" name="id" value={product.id} />
       <Field>
         <FieldLabel htmlFor="title">Product Title*</FieldLabel>
-        <Input id="title" name="title" defaultValue={product.title} required
-        disabled={isPending} />
+        <Input
+          id="title"
+          name="title"
+          defaultValue={product.title}
+          required
+          disabled={isPending}
+        />
         {state.fieldErrors?.title && (
           <FieldError errors={[{ message: state.fieldErrors.title }]} />
         )}
@@ -83,15 +106,14 @@ export function EditProductForm({ product }: EditProductFormProps) {
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}
-        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+        >
           {isPending ? "Updating..." : "Update Product"}
         </Button>
       </div>
     </form>
   );
 }
-function updateActionWithId(arg0: null, formData: FormData) {
-  throw new Error("Function not implemented.");
-}
-

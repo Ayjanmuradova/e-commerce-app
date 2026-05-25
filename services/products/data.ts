@@ -1,9 +1,5 @@
 import { prisma } from "@/lib/prisma";
-
-export enum Currency {
-  USD = "USD",
-  SEK = "SEK",
-}
+import { Currency } from "@/types/product";
 
 export const Currencies = Object.values(Currency);
 
