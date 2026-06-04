@@ -7,7 +7,6 @@ import { createProduct } from '@/services/products/data';
 import { stripe } from '@/lib/stripe';
 import { redirect } from 'next/navigation';
 import { createProductSchema } from '@/lib/validations/product';
-import { ca } from 'zod/locales';
 
 function getFileName(file: File, index: number): string {
   const fileExtension = file.name.includes('.')
@@ -50,6 +49,7 @@ export async function createProductAction(
 
   if (!parsed.success) {
     const errors = parsed.error.flatten().fieldErrors;
+    console.log("❌ ZOD VALIDATION ERRORS:", errors);
     return {
       status: 'error',
       message: 'Please fix the errors below.',

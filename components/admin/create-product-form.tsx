@@ -17,7 +17,6 @@ export function CreateProductForm() {
     <form
       action={formAction}
       className="space-y-6"
-      encType="multipart/form-data"
       noValidate
     >
       {state.status === "error" &&
