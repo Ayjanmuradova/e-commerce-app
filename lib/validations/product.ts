@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const discountSchema = z
   .object({
-    amount: z.number().min(0, "Discount amount cannot be negative"),
+    amount: z.coerce.number().min(0, "Discount amount cannot be negative"),
     type: z.enum(["percentage", "fixed"], {
       message: "Please select a valid discount type",
     }),

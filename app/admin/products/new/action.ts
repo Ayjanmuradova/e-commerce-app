@@ -32,6 +32,10 @@ export async function createProductAction(
   const files = formData
     .getAll('images')
     .filter((entry): entry is File => entry instanceof File);
+
+  const discountType = formData.get("discountType");
+  const discountAmount = formData.get("discountAmount");
+
   const parsed = createProductSchema.safeParse({
     title: formData.get('title'),
     description: formData.get('description'),
@@ -40,10 +44,13 @@ export async function createProductAction(
     price: formData.get('price'),
     stock: formData.get('stock'),
     tags: formData.getAll('tags'),
-    discount: {
-      amount: formData.get('discountAmount'),
-      type: formData.get('discountType')
-    },
+    discount:
+  discountType && discountAmount
+    ? {
+        amount: Number(discountAmount),
+        type: discountType,
+      }
+    : undefined,
     images: files,
   });
 
