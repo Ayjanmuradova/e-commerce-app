@@ -6,7 +6,10 @@ import { getAdmin } from '@/lib/authz';
 import { createProduct } from '@/services/products/data';
 import { stripe } from '@/lib/stripe';
 import { redirect } from 'next/navigation';
-import { createProductSchema } from '@/lib/validations/product';
+import {
+  createProductSchema,
+  parseDiscountFromFormData,
+} from '@/lib/validations/product';
 import {
   E2E_FAKE_IMAGE_URL,
   E2E_FAKE_STRIPE_PRICE_ID,
@@ -39,9 +42,6 @@ export async function createProductAction(
     .getAll('images')
     .filter((entry): entry is File => entry instanceof File);
 
-  const discountType = formData.get("discountType");
-  const discountAmount = formData.get("discountAmount");
-
   const parsed = createProductSchema.safeParse({
     title: formData.get('title'),
     description: formData.get('description'),
@@ -50,13 +50,7 @@ export async function createProductAction(
     price: formData.get('price'),
     stock: formData.get('stock'),
     tags: formData.getAll('tags'),
-    discount:
-  discountType && discountAmount
-    ? {
-        amount: Number(discountAmount),
-        type: discountType,
-      }
-    : undefined,
+    discount: parseDiscountFromFormData(formData),
     images: files,
   });
 

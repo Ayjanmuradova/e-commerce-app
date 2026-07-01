@@ -60,3 +60,24 @@ export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type ProductFormState = {
   [K in keyof CreateProductInput]: string;
 };
+
+export function parseDiscountFromFormData(
+  formData: FormData,
+): { amount: string; type: string } | undefined {
+  try {
+    const discountType = formData.get("discountType");
+    const discountAmount = formData.get("discountAmount");
+
+    const type = typeof discountType === "string" ? discountType.trim() : "";
+    const amount = typeof discountAmount === "string" ? discountAmount.trim() : "";
+
+    if (!type && !amount) return undefined;
+
+    if (!type || !amount) return undefined;
+
+    return { amount, type };
+  } catch (error) {
+    console.error("parseDiscountFromFormData failed:", error);
+    return undefined;
+  }
+}
