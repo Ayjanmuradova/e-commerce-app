@@ -7,7 +7,6 @@ import { createProduct } from '@/services/products/data';
 import { stripe } from '@/lib/stripe';
 import { redirect } from 'next/navigation';
 import { createProductSchema } from '@/lib/validations/product';
-import { ca } from 'zod/locales';
 
 function getFileName(file: File, index: number): string {
   const fileExtension = file.name.includes('.')
@@ -33,6 +32,10 @@ export async function createProductAction(
   const files = formData
     .getAll('images')
     .filter((entry): entry is File => entry instanceof File);
+
+  const discountType = formData.get("discountType");
+  const discountAmount = formData.get("discountAmount");
+
   const parsed = createProductSchema.safeParse({
     title: formData.get('title'),
     description: formData.get('description'),
@@ -41,15 +44,19 @@ export async function createProductAction(
     price: formData.get('price'),
     stock: formData.get('stock'),
     tags: formData.getAll('tags'),
-    discount: {
-      amount: formData.get('discountAmount'),
-      type: formData.get('discountType')
-    },
+    discount:
+  discountType && discountAmount
+    ? {
+        amount: Number(discountAmount),
+        type: discountType,
+      }
+    : undefined,
     images: files,
   });
 
   if (!parsed.success) {
     const errors = parsed.error.flatten().fieldErrors;
+    console.log("❌ ZOD VALIDATION ERRORS:", errors);
     return {
       status: 'error',
       message: 'Please fix the errors below.',
