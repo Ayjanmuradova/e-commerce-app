@@ -50,6 +50,11 @@ export function EditProductForm({ product }: EditProductFormProps) {
           {state.message}
         </div>
       )}
+      {state.status === "success" && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+          {state.message}
+        </div>
+      )}
       <input type="hidden" name="id" value={product.id} />
       <Field>
         <FieldLabel htmlFor="title">Product Title*</FieldLabel>

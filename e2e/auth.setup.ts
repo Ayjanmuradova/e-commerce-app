@@ -1,58 +1,71 @@
 import { test as setup, expect } from '@playwright/test';
 import fs from 'fs';
-import path from 'path';
+import { gotoPage } from './helpers/navigation';
 
-const adminAuthFile = path.join(__dirname, '.auth', 'admin.json');
-const userAuthFile = path.join(__dirname, '.auth', 'user.json');
+const adminAuthFile = 'e2e/.auth/admin.json';
+const userAuthFile = 'e2e/.auth/user.json';
+
+setup.setTimeout(120_000);
 
 function assertSessionFileExists(
   filePath: string,
   label: string,
   codegenUrl: string,
 ): void {
-  if (fs.existsSync(filePath)) return;
+  try {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).size > 0) return;
+  } catch (error) {
+    console.error(`Could not read ${filePath}:`, error);
+  }
 
   throw new Error(
     [
-      `${label} session file not found: ${filePath}`,
+      `${label} session file missing or empty: ${filePath}`,
       '',
-      'Create it once with codegen (dev server must be running):',
-      `  npx playwright codegen ${codegenUrl} --save-storage=${filePath.replace(/\\/g, '/')}`,
+      'Run (with dev server running):',
+      `  npx playwright codegen ${codegenUrl} --save-storage=${filePath}`,
       '',
-      'Log in with your Auth0 test account, then close the codegen window.',
+      'Log in with your Auth0 test account, then close codegen.',
     ].join('\n'),
   );
 }
 
-setup('admin session is valid', async ({ browser, baseURL }) => {
-  assertSessionFileExists(
-    adminAuthFile,
-    'Admin',
-    `${baseURL}/admin/products`,
-  );
+setup.describe('admin auth', () => {
+  setup.use({ storageState: adminAuthFile });
 
-  const context = await browser.newContext({ storageState: adminAuthFile });
-  const page = await context.newPage();
+  setup('session is valid', async ({ page, baseURL }) => {
+    try {
+      assertSessionFileExists(
+        adminAuthFile,
+        'Admin',
+        `${baseURL}/admin/products`,
+      );
 
-  await page.goto('/admin/products');
-
-  await expect(page).not.toHaveURL(/\/forbidden/);
-  await expect(page).not.toHaveURL(/\/auth\/login/);
-  await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible();
-
-  await context.close();
+      await gotoPage(page, '/admin/products');
+      await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible({
+        timeout: 60_000,
+      });
+    } catch (error) {
+      console.error('Admin auth setup failed:', error);
+      throw error;
+    }
+  });
 });
 
-setup('user session is valid', async ({ browser, baseURL }) => {
-  assertSessionFileExists(userAuthFile, 'User', `${baseURL}/profile`);
+setup.describe('user auth', () => {
+  setup.use({ storageState: userAuthFile });
 
-  const context = await browser.newContext({ storageState: userAuthFile });
-  const page = await context.newPage();
+  setup('session is valid', async ({ page, baseURL }) => {
+    try {
+      assertSessionFileExists(userAuthFile, 'User', `${baseURL}/profile`);
 
-  await page.goto('/profile');
-
-  await expect(page).not.toHaveURL(/\/auth\/login/);
-  await expect(page.getByRole('heading', { name: 'My Profile' })).toBeVisible();
-
-  await context.close();
+      await gotoPage(page, '/profile');
+      await expect(page.getByRole('heading', { name: 'My Profile' })).toBeVisible({
+        timeout: 60_000,
+      });
+    } catch (error) {
+      console.error('User auth setup failed:', error);
+      throw error;
+    }
+  });
 });

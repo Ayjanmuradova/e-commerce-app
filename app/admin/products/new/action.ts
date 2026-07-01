@@ -7,6 +7,12 @@ import { createProduct } from '@/services/products/data';
 import { stripe } from '@/lib/stripe';
 import { redirect } from 'next/navigation';
 import { createProductSchema } from '@/lib/validations/product';
+import {
+  E2E_FAKE_IMAGE_URL,
+  E2E_FAKE_STRIPE_PRICE_ID,
+  E2E_FAKE_STRIPE_PRODUCT_ID,
+  isE2ETestMode,
+} from '@/lib/e2e';
 
 function getFileName(file: File, index: number): string {
   const fileExtension = file.name.includes('.')
@@ -74,26 +80,41 @@ export async function createProductAction(
 
   try {
     const files = formData.getAll('images') as File[];
-    const uploaded = await Promise.all(
-      files.map((file, index) => {
-        const filename = getFileName(file, index);
-       return putToBlob(filename, file, {
-          access: 'public',
-          addRandomSuffix: true,
-        });
-      }),
-    );
 
-    const stripeProduct = await stripe.products.create({
-      name: parsed.data.title,
-      images: uploaded.length > 0 ? [uploaded[0].url] : [],
-    });
+    let imageUrls: string[];
+    let stripeProductId: string;
+    let stripePriceId: string;
 
-    const stripePrice = await stripe.prices.create({
-      product: stripeProduct.id,
-      unit_amount: Math.round(parsed.data.price * 100),
-      currency: 'sek',
-    });
+    if (isE2ETestMode()) {
+      imageUrls = [E2E_FAKE_IMAGE_URL];
+      stripeProductId = E2E_FAKE_STRIPE_PRODUCT_ID;
+      stripePriceId = E2E_FAKE_STRIPE_PRICE_ID;
+    } else {
+      const uploaded = await Promise.all(
+        files.map((file, index) => {
+          const filename = getFileName(file, index);
+          return putToBlob(filename, file, {
+            access: 'public',
+            addRandomSuffix: true,
+          });
+        }),
+      );
+
+      const stripeProduct = await stripe.products.create({
+        name: parsed.data.title,
+        images: uploaded.length > 0 ? [uploaded[0].url] : [],
+      });
+
+      const stripePrice = await stripe.prices.create({
+        product: stripeProduct.id,
+        unit_amount: Math.round(parsed.data.price * 100),
+        currency: 'sek',
+      });
+
+      imageUrls = uploaded.map((item) => item.url);
+      stripeProductId = stripeProduct.id;
+      stripePriceId = stripePrice.id;
+    }
 
     await createProduct({
         title: parsed.data.title, 
@@ -102,9 +123,9 @@ export async function createProductAction(
         brand: parsed.data.brand,
         stock: parsed.data.stock,
         tags: parsed.data.tags || [],
-        images: uploaded.map((item) =>item.url),
-        stripeProductId: stripeProduct.id,
-        stripePriceId: stripePrice.id,
+        images: imageUrls,
+        stripeProductId,
+        stripePriceId,
         discountAmount: parsed.data.discount?.amount || null,
         discountType: parsed.data.discount?.type || null,
       });

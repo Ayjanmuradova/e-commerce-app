@@ -6,14 +6,15 @@ import { getProductById, updateProduct } from "@/services/products/data";
 import { requireAdmin } from "@/lib/authz";
 import { createProductSchema } from "@/lib/validations/product";
 import { stripe } from "@/lib/stripe";
+import {
+  E2E_FAKE_IMAGE_URL,
+  E2E_FAKE_STRIPE_PRICE_ID,
+  isE2ETestMode,
+} from "@/lib/e2e";
 
 const updateSchema = createProductSchema.pick({
   title: true,
   price: true,
-  description: true,
-  brand: true,
-  category: true,
-  stock: true,
 });
 
 function getFileName(file: File, index: number): string {
@@ -42,84 +43,82 @@ export async function updateProductAction(
 ) {
   await requireAdmin();
   try {
-    const rawData = {
+    const validatedData = updateSchema.safeParse({
       title: formData.get("title"),
-      price: parseFloat(formData.get("price") as string),
-      description: formData.get("description"),
-      brand: formData.get("brand"),
-      category: formData.get("category"),
-      stock: parseInt(formData.get("stock") as string, 10),
-    };
-    const validatedData = updateSchema.safeParse(rawData);
+      price: formData.get("price"),
+    });
 
     if (!validatedData.success) {
-        const errors = validatedData.error.flatten().fieldErrors;
+      const errors = validatedData.error.flatten().fieldErrors;
       return {
         status: "error",
         message: "Validation failed. Please check the input fields.",
         fieldErrors: {
           title: errors.title?.[0],
           price: errors.price?.[0],
-          description: errors.description?.[0],
-          brand: errors.brand?.[0],
-          category: errors.category?.[0],
-          stock: errors.stock?.[0],
         },
       };
     }
 
-    const { title, price, description, brand, category, stock } = validatedData.data;
+    const { title, price } = validatedData.data;
     const files = formData.getAll("images") as File[];
-
     const existingProduct = await getProductById(id);
 
-    let newImages: string[] | undefined = undefined;
-    if (files.length > 0 && files[0].size > 0) {
-      const uploaded = await Promise.all(
-        files.map((file, index) => {
-          const fileName = getFileName(file, index);
-          return putToBlob(fileName, file, {
-            access: "public",
-            addRandomSuffix: true,
-          });
-        }),
-      );
-      newImages = uploaded.map((item) => item.url);
+    if (!existingProduct) {
+      return { status: "error", message: "Product not found." };
     }
-    if (newImages && newImages.length > 0) {
-      const existingProduct = await getProductById(id);
-      if (existingProduct?.images?.length) {
-        await del(existingProduct.images);
+
+    let newImages: string[] | undefined;
+
+    if (files.length > 0 && files[0].size > 0) {
+      if (isE2ETestMode()) {
+        newImages = [E2E_FAKE_IMAGE_URL];
+      } else {
+        const uploaded = await Promise.all(
+          files.map((file, index) => {
+            const fileName = getFileName(file, index);
+            return putToBlob(fileName, file, {
+              access: "public",
+              addRandomSuffix: true,
+            });
+          }),
+        );
+        newImages = uploaded.map((item) => item.url);
+
+        if (existingProduct.images?.length) {
+          await del(existingProduct.images);
+        }
       }
     }
-    if (existingProduct?.stripeProductId) {
+
+    if (!isE2ETestMode() && existingProduct.stripeProductId) {
       await stripe.products.update(existingProduct.stripeProductId, {
         name: title,
-        description: description,
-        ...(newImages?.[0] && {
-          images: [newImages[0]],
-        }),
+        description: existingProduct.description,
+        ...(newImages?.[0] && { images: [newImages[0]] }),
       });
     }
 
-    // As mentioned on the previous comment since Stripe prices are immutable we create a new Stripe price if product price changed
-    let newStripePriceId = existingProduct?.stripePriceId;
+    let newStripePriceId = existingProduct.stripePriceId;
 
-    if (existingProduct?.stripeProductId && existingProduct.price !== price) {
+    if (
+      !isE2ETestMode() &&
+      existingProduct.stripeProductId &&
+      existingProduct.price !== price
+    ) {
       const newStripePrice = await stripe.prices.create({
         product: existingProduct.stripeProductId,
         unit_amount: Math.round(price * 100),
         currency: "sek",
       });
-
       newStripePriceId = newStripePrice.id;
+    } else if (isE2ETestMode() && existingProduct.price !== price) {
+      newStripePriceId = E2E_FAKE_STRIPE_PRICE_ID;
     }
+
     await updateProduct(id, {
       title,
       price,
-      description,
-      brand,
-      stock,
       stripePriceId: newStripePriceId === null ? undefined : newStripePriceId,
       ...(newImages && { images: newImages }),
     });
