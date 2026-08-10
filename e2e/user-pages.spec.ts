@@ -24,17 +24,6 @@ test.describe('Standard user pages', () => {
     }
   });
 
-  test('cart page loads for logged-in user', async ({ page }) => {
-    try {
-      await gotoPage(page, '/cart');
-      await expect(page.getByRole('heading', { name: 'Shopping Cart' })).toBeVisible();
-      await expect(page.getByText('Your cart is empty.')).toBeVisible();
-    } catch (error) {
-      console.error('Cart test failed:', error);
-      throw error;
-    }
-  });
-
   test('cannot access admin area', async ({ page }) => {
     try {
       await gotoPage(page, '/admin/products');

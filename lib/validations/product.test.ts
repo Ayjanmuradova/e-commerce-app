@@ -1,4 +1,4 @@
-import { createProductSchema, parseDiscountFromFormData } from "./product";
+import { createProductSchema, parseDiscountFromFormData, updateProductSchema } from "./product";
 
 describe("Product Validation Schema", () => {
   const dummyImage = new File(["dummy content"], "test-image.jpg", {
@@ -15,6 +15,24 @@ describe("Product Validation Schema", () => {
     tags: ["running", "sports"],
     images: [dummyImage],
   };
+
+  it("should fail validation if category is missing", () => {
+    const { category: _category, ...withoutCategory } = validProduct;
+    const result = createProductSchema.safeParse(withoutCategory);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.category?.length).toBeGreaterThan(
+        0,
+      );
+    }
+  });
+
+  it("should pass update schema with core fields and no images", () => {
+    const { images: _images, ...core } = validProduct;
+    const result = updateProductSchema.safeParse(core);
+    expect(result.success).toBe(true);
+  });
 
   it("should pass validation with valid data", () => {
     const result = createProductSchema.safeParse(validProduct);

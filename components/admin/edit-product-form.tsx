@@ -2,14 +2,13 @@
 
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { updateProductAction } from "@/app/admin/products/[id]/edit/action";
 import {
   CreateProductFormState,
   initialCreateProductFormState,
 } from "@/types/form-state";
+import { ProductFormFields } from "@/components/admin/product-form-fields";
 
 interface EditProductFormProps {
   product: {
@@ -17,10 +16,12 @@ interface EditProductFormProps {
     title: string;
     price: number;
     images: string[];
-    description?: string;
-    brand?: string;
-    category?: string;
-    stock?: number;
+    description: string;
+    brand: string;
+    category: string;
+    stock: number;
+    discountAmount?: number | null;
+    discountType?: string | null;
   };
 }
 
@@ -34,7 +35,7 @@ export function EditProductForm({ product }: EditProductFormProps) {
   };
 
   const [state, formAction, isPending] = useActionState(
-    handleUpdate as any,
+    handleUpdate,
     initialCreateProductFormState,
   );
 
@@ -45,62 +46,36 @@ export function EditProductForm({ product }: EditProductFormProps) {
       encType="multipart/form-data"
       noValidate
     >
-      {state.status === "error" && !state.fieldErrors && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {state.message}
-        </div>
-      )}
+      {state.status === "error" &&
+        Object.keys(state.fieldErrors || {}).length === 0 && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {state.message}
+          </div>
+        )}
       {state.status === "success" && (
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
           {state.message}
         </div>
       )}
+
       <input type="hidden" name="id" value={product.id} />
-      <Field>
-        <FieldLabel htmlFor="title">Product Title*</FieldLabel>
-        <Input
-          id="title"
-          name="title"
-          defaultValue={product.title}
-          required
-          disabled={isPending}
-        />
-        {state.fieldErrors?.title && (
-          <FieldError errors={[{ message: state.fieldErrors.title }]} />
-        )}
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="price">Price (SEK)*</FieldLabel>
-        <Input
-          id="price"
-          name="price"
-          type="number"
-          step="0.01"
-          defaultValue={product.price}
-          required
-          disabled={isPending}
-        />
-        {state.fieldErrors?.price && (
-          <FieldError errors={[{ message: state.fieldErrors.price }]} />
-        )}
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="images">Product Images</FieldLabel>
-        <Input
-          id="images"
-          name="images"
-          type="file"
-          multiple
-          accept="image/*"
-          disabled={isPending}
-        />
-        <p className="text-xs text-slate-500 mt-2 italic">
-          Upload images for the product.
-        </p>
-        {state.fieldErrors?.images && (
-          <FieldError errors={[{ message: state.fieldErrors.images }]} />
-        )}
-      </Field>
+
+      <ProductFormFields
+        state={state}
+        isPending={isPending}
+        imagesRequired={false}
+        defaults={{
+          title: product.title,
+          description: product.description,
+          brand: product.brand,
+          category: product.category,
+          price: product.price,
+          stock: product.stock,
+          discountAmount: product.discountAmount,
+          discountType: product.discountType,
+        }}
+      />
+
       <div className="flex gap-3 pt-4">
         <Button
           type="button"

@@ -68,4 +68,15 @@ test.describe('Logged out access', () => {
       throw error;
     }
   });
+
+  test('checkout API requires authentication', async ({ request }) => {
+    const response = await request.post('/api/checkout', {
+      data: {
+        items: [{ stripePriceId: 'price_e2e_test', quantity: 1 }],
+      },
+    });
+    expect(response.status()).toBe(401);
+    const body = await response.json();
+    expect(body.error).toMatch(/unauthorized/i);
+  });
 });
