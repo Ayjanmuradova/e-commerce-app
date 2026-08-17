@@ -27,6 +27,12 @@ export default async function Navbar() {
         {user ? (
           <>
             <Link
+              href="/orders"
+              className="text-gray-600 hover:text-gray-900"
+            >
+              Orders
+            </Link>
+            <Link
               href="/profile"
               className="text-gray-600 hover:text-gray-900"
             >

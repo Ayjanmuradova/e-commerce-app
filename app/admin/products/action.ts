@@ -4,19 +4,23 @@ import { revalidatePath } from "next/cache";
 import { del } from "@vercel/blob";
 import { requireAdmin } from "@/lib/authz";
 import { stripe } from "@/lib/stripe";
+import { isE2ETestMode } from "@/lib/e2e";
 
 export async function deleteProductAction(id: string) {
   await requireAdmin();
   try {
     const product = await getProductById(id);
-    if (product?.images?.length) {
-      await del(product.images);
-    }
 
-    if (product?.stripeProductId) {
-      await stripe.products.update(product.stripeProductId, {
-        active: false,
-      });
+    if (!isE2ETestMode()) {
+      if (product?.images?.length) {
+        await del(product.images);
+      }
+
+      if (product?.stripeProductId) {
+        await stripe.products.update(product.stripeProductId, {
+          active: false,
+        });
+      }
     }
 
     await deleteProduct(id);
