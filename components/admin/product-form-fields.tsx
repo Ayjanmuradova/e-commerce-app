@@ -80,7 +80,7 @@ export function ProductFormFields({
           <Input
             id="category"
             name="category"
-            placeholder="e.g. Electronics"
+            placeholder="e.g. Phones"
             defaultValue={defaults?.category}
             disabled={isPending}
           />

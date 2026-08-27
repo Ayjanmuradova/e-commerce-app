@@ -50,6 +50,49 @@ export async function getProducts() {
   });
 }
 
+export async function getProductsByCategory(category: string) {
+  return prisma.product.findMany({
+    where: { category },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function searchProducts(query: string) {
+  const q = query.trim();
+  if (!q) return getProducts();
+
+  const products = await getProducts();
+  const needle = q.toLowerCase();
+  return products.filter((product) => {
+    const haystack = [
+      product.title,
+      product.description,
+      product.brand,
+      product.category,
+      ...(product.tags ?? []),
+    ]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(needle);
+  });
+}
+
+export async function getProductByStripePriceId(stripePriceId: string) {
+  return prisma.product.findFirst({
+    where: { stripePriceId },
+  });
+}
+
+export async function decrementProductStock(id: string, quantity: number) {
+  const product = await getProductById(id);
+  if (!product) return null;
+  const nextStock = Math.max(0, product.stock - quantity);
+  return prisma.product.update({
+    where: { id },
+    data: { stock: nextStock },
+  });
+}
+
 export async function deleteProduct(id: string) {
   return await prisma.product.delete({
     where: {

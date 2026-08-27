@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe";
 import Link from "next/link";
 import ClearCart from "@/components/ClearCart";
 import { isE2ETestMode } from "@/lib/e2e";
+import { recordPaidCheckoutSession } from "@/services/orders/data";
 
 function SuccessContent({ email }: { email?: string | null }) {
   return (
@@ -64,12 +65,14 @@ export default async function SuccessPage({
   }
 
   const session = await stripe.checkout.sessions.retrieve(session_id, {
-    expand: ["line_items", "payment_intent"],
+    expand: ["line_items.data.price", "payment_intent"],
   });
 
   if (session.status === "open") redirect("/");
 
   if (session.status === "complete") {
+    await recordPaidCheckoutSession(session);
+
     return (
       <div className="max-w-2xl mx-auto py-16 px-4 text-center min-h-[75vh] flex flex-col justify-center">
         <ClearCart />

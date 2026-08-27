@@ -38,7 +38,7 @@ export async function seedStoreProduct(overrides?: {
     title,
     description: "Seeded for cart/checkout e2e",
     brand: "E2E Brand",
-    category: "Electronics",
+    category: "Phones",
     price: overrides?.price ?? 250,
     stock: 20,
     tags: ["e2e"],

@@ -19,7 +19,7 @@ test.describe('Logged out access', () => {
   test('homepage is public', async ({ page }) => {
     try {
       await gotoPage(page, '/');
-      await expect(page.getByRole('heading', { name: 'Our Products' })).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'All Products' })).toBeVisible({
         timeout: 30_000,
       });
     } catch (error) {

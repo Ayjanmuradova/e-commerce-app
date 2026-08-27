@@ -1,11 +1,24 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
+import { formatStorePrice } from "@/lib/pricing";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export default function CartPage() {
   const { cartItems, remove, update, totalPrice, isMounted } = useCart();
   const [isLoading, setIsLoading] = useState(false);
+
+  const originalTotal = cartItems.reduce(
+    (sum, item) => sum + (item.originalPrice ?? item.price) * item.quantity,
+    0,
+  );
+  const savings = Math.max(0, originalTotal - totalPrice);
+  const sharedPercent = cartItems.every(
+    (item) => (item.percentOff ?? 0) === (cartItems[0]?.percentOff ?? 0),
+  )
+    ? cartItems[0]?.percentOff ?? 0
+    : 0;
 
   const onCheckout = async () => {
     setIsLoading(true);
@@ -17,7 +30,7 @@ export default function CartPage() {
       });
 
       const data = await response.json();
-      
+
       if (data.url) {
         window.location.href = data.url;
       } else {
@@ -44,42 +57,95 @@ export default function CartPage() {
       ) : (
         <div className="bg-white border rounded-xl shadow-sm p-6">
           <ul className="divide-y divide-gray-200">
-            {cartItems.map((item) => (
-              <li key={item.id} className="py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <img src={item.images} alt={item.title} className="w-20 h-20 object-cover rounded-md border" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{item.title}</h3>
-                    <p className="text-indigo-600 font-medium">{item.price} {item.currency}</p>
+            {cartItems.map((item) => {
+              const original = item.originalPrice ?? item.price;
+              const hasDiscount = original > item.price;
+              return (
+                <li
+                  key={item.id}
+                  className="py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={item.images}
+                      alt={item.title}
+                      className="w-20 h-20 object-cover rounded-md border"
+                    />
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                      <p className="font-medium text-indigo-600">
+                        {formatStorePrice(item.price, item.currency)}
+                        {hasDiscount ? (
+                          <span className="ml-2 text-sm font-normal text-stone-400 line-through">
+                            {formatStorePrice(original, item.currency)}
+                          </span>
+                        ) : null}
+                      </p>
+                      {hasDiscount && item.percentOff ? (
+                        <p className="mt-1 text-xs text-rose-600">-{item.percentOff}%</p>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                  <div className="flex items-center border rounded-lg bg-gray-50">
-                    <button onClick={() => update(item.id, Math.max(1, item.quantity - 1))} className="px-3 py-1 hover:bg-gray-200">-</button>
-                    <span className="px-3 font-medium bg-white py-1 border-x">{item.quantity}</span>
-                    <button onClick={() => update(item.id, item.quantity + 1)} className="px-3 py-1 hover:bg-gray-200">+</button>
+
+                  <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="flex items-center border rounded-lg bg-gray-50">
+                      <button
+                        onClick={() => update(item.id, Math.max(1, item.quantity - 1))}
+                        className="px-3 py-1 hover:bg-gray-200"
+                      >
+                        -
+                      </button>
+                      <span className="px-3 font-medium bg-white py-1 border-x">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => update(item.id, item.quantity + 1)}
+                        className="px-3 py-1 hover:bg-gray-200"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => remove(item.id)}
+                      className="rounded-full border border-stone-200 p-2 text-stone-500 transition-colors hover:border-rose-300 hover:text-rose-600"
+                      aria-label={`Remove ${item.title} from cart`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                  <button onClick={() => remove(item.id)} className="text-red-500 hover:text-red-700 font-medium text-sm">
-                    Remove
-                  </button>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
 
           <div className="mt-8 border-t pt-8 flex flex-col items-end">
+            {savings > 0 ? (
+              <div className="mb-4 w-full max-w-xs space-y-1 text-sm text-stone-600">
+                <div className="flex justify-between">
+                  <span>Original</span>
+                  <span>{originalTotal.toFixed(2)} SEK</span>
+                </div>
+                <div className="flex justify-between text-rose-600">
+                  <span>{sharedPercent ? `Discount (−${sharedPercent}%)` : "Discount"}</span>
+                  <span>−{savings.toFixed(2)} SEK</span>
+                </div>
+              </div>
+            ) : null}
             <p className="text-lg text-gray-600 mb-1">Subtotal</p>
-            <p className="text-3xl font-black text-gray-900 mb-6">
+            <p className="text-3xl font-black text-gray-900 mb-2">
               {totalPrice.toFixed(2)} SEK
             </p>
-            
+            <p className="mb-6 text-xs text-stone-500">
+              Stripe checkout will show the original price, discount, and amount due.
+            </p>
+
             <button
               onClick={onCheckout}
               disabled={isLoading}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg transition-colors w-full sm:w-auto text-lg"
             >
-              {isLoading ? "Redirecting to Stripe..." : "Checkout"}
+              {isLoading ? "Redirecting to Stripe..." : "Go to checkout"}
             </button>
           </div>
         </div>
