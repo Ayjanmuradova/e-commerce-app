@@ -4,129 +4,142 @@ import { del, put as putToBlob } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { getProductById, updateProduct } from "@/services/products/data";
 import { requireAdmin } from "@/lib/authz";
-import { createProductSchema } from "@/lib/validations/product";
+import {
+  fieldErrorsFromZod,
+  parseProductCoreFromFormData,
+  updateProductSchema,
+} from "@/lib/validations/product";
 import { stripe } from "@/lib/stripe";
-
-const updateSchema = createProductSchema.pick({
-  title: true,
-  price: true,
-  description: true,
-  brand: true,
-  category: true,
-  stock: true,
-});
+import type { CreateProductFormState } from "@/types/form-state";
+import {
+  E2E_FAKE_IMAGE_URL,
+  E2E_FAKE_STRIPE_PRICE_ID,
+  isE2ETestMode,
+} from "@/lib/e2e";
 
 function getFileName(file: File, index: number): string {
   const extension = file.name.split(".").pop()?.toLowerCase();
   return `product-images/${Date.now()}-${index}.${extension}`;
 }
 
-type ProductFormState = {
-  status: "idle" | "success" | "error";
-  message: string;
-  fieldErrors?: {
-    title?: string;
-    price?: string;
-    images?: string;
-    description?: string;
-    brand?: string;
-    category?: string;
-    stock?: string;
-  };
-};
-
 export async function updateProductAction(
   id: string,
-  prevState: ProductFormState,
+  _prevState: CreateProductFormState,
   formData: FormData,
-) {
+): Promise<CreateProductFormState> {
   await requireAdmin();
+
   try {
-    const rawData = {
-      title: formData.get("title"),
-      price: parseFloat(formData.get("price") as string),
-      description: formData.get("description"),
-      brand: formData.get("brand"),
-      category: formData.get("category"),
-      stock: parseInt(formData.get("stock") as string, 10),
-    };
-    const validatedData = updateSchema.safeParse(rawData);
+    const validatedData = updateProductSchema.safeParse(
+      parseProductCoreFromFormData(formData),
+    );
 
     if (!validatedData.success) {
-        const errors = validatedData.error.flatten().fieldErrors;
       return {
         status: "error",
         message: "Validation failed. Please check the input fields.",
-        fieldErrors: {
-          title: errors.title?.[0],
-          price: errors.price?.[0],
-          description: errors.description?.[0],
-          brand: errors.brand?.[0],
-          category: errors.category?.[0],
-          stock: errors.stock?.[0],
-        },
+        fieldErrors: fieldErrorsFromZod(validatedData.error),
       };
     }
 
-    const { title, price, description, brand, category, stock } = validatedData.data;
-    const files = formData.getAll("images") as File[];
+    const {
+      title,
+      price,
+      description,
+      brand,
+      category,
+      stock,
+      tags,
+      discount,
+    } = validatedData.data;
 
+    const files = formData
+      .getAll("images")
+      .filter((entry): entry is File => entry instanceof File && entry.size > 0);
     const existingProduct = await getProductById(id);
 
-    let newImages: string[] | undefined = undefined;
-    if (files.length > 0 && files[0].size > 0) {
-      const uploaded = await Promise.all(
-        files.map((file, index) => {
-          const fileName = getFileName(file, index);
-          return putToBlob(fileName, file, {
-            access: "public",
-            addRandomSuffix: true,
-          });
-        }),
-      );
-      newImages = uploaded.map((item) => item.url);
+    if (!existingProduct) {
+      return {
+        status: "error",
+        message: "Product not found.",
+        fieldErrors: {},
+      };
     }
-    if (newImages && newImages.length > 0) {
-      const existingProduct = await getProductById(id);
-      if (existingProduct?.images?.length) {
-        await del(existingProduct.images);
+
+    let newImages: string[] | undefined;
+
+    if (files.length > 0) {
+      if (isE2ETestMode()) {
+        newImages = [E2E_FAKE_IMAGE_URL];
+      } else {
+        const uploaded = await Promise.all(
+          files.map((file, index) => {
+            const fileName = getFileName(file, index);
+            return putToBlob(fileName, file, {
+              access: "public",
+              addRandomSuffix: true,
+            });
+          }),
+        );
+        newImages = uploaded.map((item) => item.url);
+
+        if (existingProduct.images?.length) {
+          await del(existingProduct.images);
+        }
       }
     }
-    if (existingProduct?.stripeProductId) {
+
+    if (!isE2ETestMode() && existingProduct.stripeProductId) {
       await stripe.products.update(existingProduct.stripeProductId, {
         name: title,
-        description: description,
-        ...(newImages?.[0] && {
-          images: [newImages[0]],
-        }),
+        description,
+        ...(newImages?.[0] && { images: [newImages[0]] }),
       });
     }
 
-    // As mentioned on the previous comment since Stripe prices are immutable we create a new Stripe price if product price changed
-    let newStripePriceId = existingProduct?.stripePriceId;
+    let newStripePriceId = existingProduct.stripePriceId;
 
-    if (existingProduct?.stripeProductId && existingProduct.price !== price) {
+    if (
+      !isE2ETestMode() &&
+      existingProduct.stripeProductId &&
+      existingProduct.price !== price
+    ) {
       const newStripePrice = await stripe.prices.create({
         product: existingProduct.stripeProductId,
         unit_amount: Math.round(price * 100),
         currency: "sek",
       });
-
       newStripePriceId = newStripePrice.id;
+    } else if (isE2ETestMode() && existingProduct.price !== price) {
+      newStripePriceId = E2E_FAKE_STRIPE_PRICE_ID;
     }
+
     await updateProduct(id, {
       title,
       price,
       description,
       brand,
+      category,
       stock,
+      tags: tags || [],
+      discountAmount: discount?.amount ?? null,
+      discountType: discount?.type ?? null,
       stripePriceId: newStripePriceId === null ? undefined : newStripePriceId,
       ...(newImages && { images: newImages }),
     });
+
     revalidatePath("/admin/products");
-    return { status: "success", message: "Product updated successfully." };
+    return {
+      status: "success",
+      message: "Product updated successfully.",
+      fieldErrors: {},
+    };
   } catch (error) {
     console.error(error);
-    return { status: "error", message: "Failed to update product." };
+    return {
+      status: "error",
+      message: "Failed to update product.",
+      fieldErrors: {},
+    };
   }
 }

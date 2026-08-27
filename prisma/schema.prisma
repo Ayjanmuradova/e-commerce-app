@@ -20,15 +20,29 @@ model Product {
   title           String
   description     String
   brand           String
+  category        String   @default("Uncategorized")
   price           Float
   stock           Int
   tags            String[]
   currency        String?   @default("SEK")
   discountAmount  Float?
   discountType    String?
-  images        String[]
+  images          String[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   stripeProductId String?
   stripePriceId   String?
+}
+
+model Order {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  stripeSessionId String   @unique
+  userEmail       String?
+  userId          String?
+  status          String
+  totalAmount     Float
+  currency        String
+  items           Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

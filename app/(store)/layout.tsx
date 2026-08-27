@@ -1,14 +1,9 @@
-import Navbar from "@/components/layout/navbar";
+import StoreShell from "@/components/layout/store-shell";
+
 export default function StoreLayout({
-    children,
-}:{ children: React.ReactNode;})
-{
-    return(
-        <>
-        <Navbar />
-        <div className="min-h-screen bg-slate-50">
-        {children}
-        </div>
-        </>
-    );
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <StoreShell>{children}</StoreShell>;
 }

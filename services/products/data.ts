@@ -3,11 +3,12 @@ import { Currency } from "@/types/product";
 
 export const Currencies = Object.values(Currency);
 
-interface ProductPayload {
+export interface ProductPayload {
   title: string;
   price: number;
   description: string;
   brand: string;
+  category: string;
   stock: number;
   tags?: string[];
   images: string[];
@@ -16,6 +17,10 @@ interface ProductPayload {
   discountAmount?: number | null;
   discountType?: string | null;
 }
+
+export type ProductUpdatePayload = Partial<
+  Omit<ProductPayload, "images"> & { images: string[] }
+>;
 
 export async function createProduct(product: ProductPayload) {
   return await prisma.product.create({
@@ -28,6 +33,7 @@ export async function createProduct(product: ProductPayload) {
       stripePriceId: product.stripePriceId,
       description: product.description,
       brand: product.brand,
+      category: product.category,
       stock: product.stock,
       tags: product.tags,
       discountAmount: product.discountAmount ?? null,
@@ -41,6 +47,49 @@ export async function getProducts() {
     orderBy: {
       createdAt: "desc",
     },
+  });
+}
+
+export async function getProductsByCategory(category: string) {
+  return prisma.product.findMany({
+    where: { category },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function searchProducts(query: string) {
+  const q = query.trim();
+  if (!q) return getProducts();
+
+  const products = await getProducts();
+  const needle = q.toLowerCase();
+  return products.filter((product) => {
+    const haystack = [
+      product.title,
+      product.description,
+      product.brand,
+      product.category,
+      ...(product.tags ?? []),
+    ]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(needle);
+  });
+}
+
+export async function getProductByStripePriceId(stripePriceId: string) {
+  return prisma.product.findFirst({
+    where: { stripePriceId },
+  });
+}
+
+export async function decrementProductStock(id: string, quantity: number) {
+  const product = await getProductById(id);
+  if (!product) return null;
+  const nextStock = Math.max(0, product.stock - quantity);
+  return prisma.product.update({
+    where: { id },
+    data: { stock: nextStock },
   });
 }
 
@@ -60,22 +109,7 @@ export async function getProductById(id: string) {
   });
 }
 
-export async function updateProduct(
-  id: string,
-  data: {
-    title?: string;
-    price?: number;
-    description?: string;
-    brand?: string;
-    stock?: number;
-    tags?: string[];
-    images?: string[];
-    stripeProductId?: string;
-    stripePriceId?: string;
-    discountAmount?: number | null;
-    discountType?: string | null;
-  },
-) {
+export async function updateProduct(id: string, data: ProductUpdatePayload) {
   return await prisma.product.update({
     where: {
       id,
